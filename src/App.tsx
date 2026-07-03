@@ -1005,7 +1005,8 @@ function LoginScreen({
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5001/auth/google";
+    const backendUrl = (import.meta as any).env.VITE_API_URL || "http://localhost:5001";
+    window.location.href = `${backendUrl}/auth/google`;
   };
 
   return (
@@ -1469,6 +1470,8 @@ function ProfileScreen({
   );
 }
 
+
+
 function MultiplayerSetupScreen({
   playerName,
   setPlayerName,
@@ -1799,9 +1802,8 @@ export default function App() {
     }
     setMpStatus("Connecting to Arena...");
     
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws-multiplayer`;
+    const backendUrl = (import.meta as any).env.VITE_API_URL || "http://localhost:5001";
+    const wsUrl = backendUrl.replace(/^http/, "ws") + "/ws-multiplayer";
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
@@ -2069,10 +2071,10 @@ export default function App() {
         </div>
       )}
 
-      {phase === "multiplayer-setup" && currentUser && (
+      {phase === "multiplayer-setup" && (
         <div className="center-screen">
           <MultiplayerSetupScreen 
-            playerName={playerNameState || currentUser.username}
+            playerName={playerNameState || (currentUser ? currentUser.username : "")}
             setPlayerName={setPlayerNameState}
             roomCode={roomCode}
             setRoomCode={setRoomCode}

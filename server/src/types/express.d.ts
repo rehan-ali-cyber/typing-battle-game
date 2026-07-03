@@ -1,7 +1,8 @@
-import * as express from "express";
+import { User as PrismaUser } from "@prisma/client";
 
 declare global {
   namespace Express {
+    // Extend the User interface used by Express Request
     interface User {
       id: string;
       username: string;
@@ -13,7 +14,6 @@ declare global {
 
     interface Request {
       userId?: string;
-      user?: User;
     }
   }
 }
