@@ -11,7 +11,7 @@ export function generateCsrfToken(res: Response): string {
   res.cookie("csrf-token", token, {
     httpOnly: false, // Must be false for frontend client to read it
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/"
   });
 
