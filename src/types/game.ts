@@ -1,6 +1,6 @@
 export type Team = "player" | "ai";
 export type GameMode = "typing" | "code";
-export type MatchPhase = "lobby" | "multiplayer-setup" | "difficulty" | "code-level" | "mode" | "countdown" | "playing" | "results" | "login" | "signup" | "forgot-password" | "reset-password" | "verify-email" | "profile";
+export type MatchPhase = "lobby" | "multiplayer-setup" | "difficulty" | "code-level" | "mode" | "countdown" | "playing" | "results";
 export type CharacterState =
   | "idle"
   | "charging"
