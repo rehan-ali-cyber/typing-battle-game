@@ -1227,7 +1227,7 @@ function ProfileScreen({
 
       <div className="mp-actions" style={{ marginTop: '32px', display: 'flex', gap: '12px' }}>
         <button className="ghost-button" onClick={onLogout} style={{ flex: 1 }}>Logout</button>
-        <button className="primary-button choose-button" onClick={onBack} style={{ flex: 2, background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }}>
+        <button className="primary-button" onClick={onBack} style={{ flex: 2, margin: 0, background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }}>
           Back to Arena ➔
         </button>
       </div>
