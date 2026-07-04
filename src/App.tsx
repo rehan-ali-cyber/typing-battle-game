@@ -1031,7 +1031,7 @@ function LoginScreen({ onBack }: { onBack: () => void }) {
         ➔ Back to Lobby
       </button>
       <div style={{ marginTop: '50px' }}>
-        <SignIn appearance={clerkAppearance} signUpUrl="/signup" fallbackRedirectUrl="/" />
+        <SignIn appearance={clerkAppearance} routing="hash" signUpUrl="#/sign-up" />
       </div>
     </section>
   );
@@ -1045,7 +1045,7 @@ function SignupScreen({ onBack }: { onBack: () => void }) {
         ➔ Back to Lobby
       </button>
       <div style={{ marginTop: '50px' }}>
-        <SignUp appearance={clerkAppearance} signInUrl="/login" fallbackRedirectUrl="/" />
+        <SignUp appearance={clerkAppearance} routing="hash" signInUrl="#/sign-in" />
       </div>
     </section>
   );
@@ -1390,6 +1390,22 @@ export default function App() {
       setPhase("login");
     }
   }, [phase, user, clerkLoaded]);
+
+  // 5. Watch for Clerk hash routing changes to switch screen phases
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.includes("sign-up")) {
+        setPhase("signup");
+      } else if (hash.includes("sign-in")) {
+        setPhase("login");
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    // Initialize once
+    handleHashChange();
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   useEffect(() => {
     fetchOnlineQuotes();
