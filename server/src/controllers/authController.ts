@@ -77,6 +77,7 @@ export async function signup(req: Request, res: Response): Promise<void> {
       message: "Registration successful! Please check your email to verify your account.",
     });
   } catch (err) {
+    console.error("Signup error details:", err);
     res.status(500).json({ error: "Server error during registration" });
   }
 }
@@ -145,6 +146,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       },
     });
   } catch (err) {
+    console.error("Login error details:", err);
     res.status(500).json({ error: "Server error during login" });
   }
 }
@@ -219,6 +221,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
       message: "If that email exists in our system, we've sent a password reset link.",
     });
   } catch (err) {
+    console.error("Forgot password error details:", err);
     res.status(500).json({ error: "Server error during forgot password" });
   }
 }
@@ -263,6 +266,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     res.json({ success: true, message: "Password reset successful! You can now log in." });
   } catch (err) {
+    console.error("Password reset error details:", err);
     res.status(500).json({ error: "Server error during password reset" });
   }
 }
@@ -297,6 +301,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 
     res.json({ success: true, message: "Email verified successfully! You can now log in." });
   } catch (err) {
+    console.error("Email verification error details:", err);
     res.status(500).json({ error: "Server error during email verification" });
   }
 }
@@ -394,6 +399,7 @@ export async function updateSettings(req: Request, res: Response): Promise<void>
       user: updatedUser,
     });
   } catch (err) {
+    console.error("Settings update error details:", err);
     res.status(500).json({ error: "Server error during settings update" });
   }
 }
