@@ -7,6 +7,7 @@ import type { AttackEvent, CharacterState, CodeLevel, FighterStats, GameMode, Ma
 import { fetchOnlineQuotes, fetchOnlineJokes } from "./data/sentences";
 import { fetchOnlineSnippets } from "./data/codeSnippets";
 import { api } from "./lib/api";
+import { SignIn, SignUp, UserProfile, useUser, useClerk } from "@clerk/clerk-react";
 
 
 const modeLabels: Record<GameMode, string> = {
@@ -864,18 +865,19 @@ function ResultsScreen({
 function LobbyScreen({
   onSelectLocal,
   onSelectMultiplayer,
-  currentUser,
+  user,
   onProfileClick,
   onLoginClick,
   publicReviews
 }: {
   onSelectLocal: () => void;
   onSelectMultiplayer: () => void;
-  currentUser: any;
+  user: any;
   onProfileClick: () => void;
   onLoginClick: () => void;
   publicReviews: any[];
 }) {
+  const rating = user?.unsafeMetadata?.rating || 1;
   return (
     <section className="start-sheet lobby-screen" style={{ maxWidth: '900px', display: 'flex', flexDirection: 'column' }}>
       <div className="sheet-header">
@@ -889,12 +891,12 @@ function LobbyScreen({
           <h1>TYPING BATTLE <span>ARENA</span></h1>
           <p className="screen-subtitle">Choose your arena path.</p>
         </div>
-        {currentUser ? (
+        {user ? (
           <button className="ghost-button" onClick={onProfileClick} style={{ padding: '0 16px', height: '44px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {currentUser.profilePicture ? (
-              <img src={currentUser.profilePicture} alt="Avatar" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+            {user.imageUrl ? (
+              <img src={user.imageUrl} alt="Avatar" style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
             ) : "👤"}
-            <span>{currentUser.username} (Lvl {currentUser.rating})</span>
+            <span>{user.username || user.firstName || "Player"} (Lvl {rating})</span>
           </button>
         ) : (
           <button className="primary-button" onClick={onLoginClick} style={{ padding: '0 16px', height: '44px', margin: 0 }}>
@@ -971,396 +973,123 @@ function LobbyScreen({
   );
 }
 
-function LoginScreen({ 
-  onLoginSuccess, 
-  onToggleSignup, 
-  onToggleForgot, 
-  setNotification 
-}: { 
-  onLoginSuccess: (user: any) => void; 
-  onToggleSignup: () => void; 
-  onToggleForgot: () => void; 
-  setNotification: (n: any) => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      const data = await api.post("/auth/login", { email, password, rememberMe });
-      if (data.success) {
-        onLoginSuccess(data.user);
-        setNotification({ type: "success", message: `Welcome back, ${data.user.username}!` });
+// Clerk Custom Dark Cyber Appearance Settings
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "#00f2fe",
+    colorBackground: "#0d101c",
+    colorText: "#f8fafc",
+    colorTextSecondary: "#94a3b8",
+    colorInputBackground: "#161b30",
+    colorInputText: "#f8fafc",
+    colorBorder: "#232e4d",
+  },
+  elements: {
+    card: {
+      border: "1px solid #1e293b",
+      boxShadow: "0 0 35px rgba(0, 242, 254, 0.15)",
+      fontFamily: "'Outfit', sans-serif",
+      background: "#0d101c"
+    },
+    headerTitle: {
+      color: "#00f2fe",
+      fontWeight: 900
+    },
+    socialButtonsBlockButton: {
+      background: "#161b30",
+      border: "1px solid #232e4d",
+      color: "#f8fafc",
+      '&:hover': {
+        background: "#1e293b"
       }
-    } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Failed to log in." });
-    } finally {
-      setSubmitting(false);
+    },
+    formButtonPrimary: {
+      background: "#00f2fe",
+      color: "#08090f",
+      fontWeight: 800,
+      '&:hover': {
+        background: "#00b2c2"
+      }
+    },
+    footerActionText: {
+      color: "#94a3b8"
+    },
+    footerActionLink: {
+      color: "#00f2fe",
+      '&:hover': {
+        color: "#00b2c2"
+      }
     }
-  };
+  }
+};
 
-  const handleGoogleLogin = () => {
-    const backendUrl = (import.meta as any).env.VITE_API_URL || "http://localhost:5001";
-    window.location.href = `${backendUrl}/auth/google`;
-  };
-
+function LoginScreen({ onBack }: { onBack: () => void }) {
   return (
-    <section className="start-sheet">
+    <section className="start-sheet auth-screen-clerk" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       <PaperDoodles />
-      <div className="auth-card">
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '24px', color: '#00f2fe' }}>⚔️ ENTER ARENA</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="auth-form-group">
-            <label>Email Address</label>
-            <input type="email" required className="auth-input" value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="auth-form-group">
-            <label>Password</label>
-            <input type="password" required className="auth-input" value={password} onChange={e => setPassword(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="auth-checkbox-row">
-            <label className="auth-checkbox-label">
-              <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} disabled={submitting} />
-              Remember Me
-            </label>
-            <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); onToggleForgot(); }}>Forgot Password?</a>
-          </div>
-          <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '0 0 16px 0', background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }} disabled={submitting}>
-            <span>{submitting ? "Authenticating..." : "Login to Account ➔"}</span>
-          </button>
-          <div style={{ textAlign: 'center', margin: '16px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', lineHeight: '0.1em' }}>
-            <span style={{ background: '#0d101c', padding: '0 10px', color: '#64748b', fontSize: '0.8rem', fontWeight: 800 }}>OR USE GOOGLE</span>
-          </div>
-          <button className="social-btn google" type="button" onClick={handleGoogleLogin} disabled={submitting}>
-            <svg viewBox="0 0 24 24" width="20" height="20">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-            </svg>
-            Google Authentication
-          </button>
-          <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: '#94a3b8' }}>
-            Don't have an account? <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); onToggleSignup(); }}>Register here</a>
-          </div>
-        </form>
+      <button className="ghost-button" onClick={onBack} style={{ position: 'absolute', top: '20px', left: '20px', margin: 0 }}>
+        ➔ Back to Lobby
+      </button>
+      <div style={{ marginTop: '50px' }}>
+        <SignIn appearance={clerkAppearance} signUpUrl="/signup" fallbackRedirectUrl="/" />
       </div>
     </section>
   );
 }
 
-function SignupScreen({ 
-  onSignupSuccess, 
-  onToggleLogin, 
-  setNotification 
-}: { 
-  onSignupSuccess: () => void; 
-  onToggleLogin: () => void; 
-  setNotification: (n: any) => void;
-}) {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      const data = await api.post("/auth/signup", { username, email, password });
-      if (data.success) {
-        setNotification({ type: "success", message: data.message || "Registration successful! Verification email sent." });
-        onSignupSuccess();
-      }
-    } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Registration failed." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+function SignupScreen({ onBack }: { onBack: () => void }) {
   return (
-    <section className="start-sheet">
+    <section className="start-sheet auth-screen-clerk" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
       <PaperDoodles />
-      <div className="auth-card">
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '24px', color: '#00f2fe' }}>⚔️ REGISTER SOLDIER</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="auth-form-group">
-            <label>Username</label>
-            <input type="text" required className="auth-input" value={username} onChange={e => setUsername(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="auth-form-group">
-            <label>Email Address</label>
-            <input type="email" required className="auth-input" value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="auth-form-group">
-            <label>Password</label>
-            <input type="password" required className="auth-input" value={password} onChange={e => setPassword(e.target.value)} disabled={submitting} />
-          </div>
-          <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '16px 0 0 0', background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }} disabled={submitting}>
-            <span>{submitting ? "Creating Profile..." : "Create Account ➔"}</span>
-          </button>
-          <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: '#94a3b8' }}>
-            Already registered? <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); onToggleLogin(); }}>Login here</a>
-          </div>
-        </form>
-      </div>
-    </section>
-  );
-}
-
-function ForgotPasswordScreen({ 
-  onBackToLogin, 
-  setNotification 
-}: { 
-  onBackToLogin: () => void; 
-  setNotification: (n: any) => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      const data = await api.post("/auth/forgot-password", { email });
-      if (data.success) {
-        setNotification({ type: "success", message: data.message || "Reset link dispatched! Check your email." });
-        onBackToLogin();
-      }
-    } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Failed to process request." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <section className="start-sheet">
-      <PaperDoodles />
-      <div className="auth-card">
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '16px', color: '#00f2fe' }}>🔑 RECOVER WAND</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '24px', lineHeight: '1.5' }}>
-          Provide your account email address and we'll dispatch a link to calibrate your access.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <div className="auth-form-group">
-            <label>Email Address</label>
-            <input type="email" required className="auth-input" value={email} onChange={e => setEmail(e.target.value)} disabled={submitting} />
-          </div>
-          <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '16px 0 0 0', background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }} disabled={submitting}>
-            <span>{submitting ? "Dispatching..." : "Send Reset Link ➔"}</span>
-          </button>
-          <div style={{ textAlign: 'center', marginTop: '24px' }}>
-            <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); onBackToLogin(); }}>Back to Login</a>
-          </div>
-        </form>
-      </div>
-    </section>
-  );
-}
-
-function ResetPasswordScreen({ 
-  token, 
-  onResetSuccess, 
-  setNotification 
-}: { 
-  token: string; 
-  onResetSuccess: () => void; 
-  setNotification: (n: any) => void;
-}) {
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    if (password !== confirmPassword) {
-      setNotification({ type: "error", message: "Passwords do not match." });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const data = await api.post("/auth/reset-password", { token, password });
-      if (data.success) {
-        setNotification({ type: "success", message: data.message || "Password recalibrated successfully!" });
-        onResetSuccess();
-      }
-    } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Failed to reset password." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <section className="start-sheet">
-      <PaperDoodles />
-      <div className="auth-card">
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '24px', color: '#ff0844' }}>🔑 RESET PASSWORD</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="auth-form-group">
-            <label>New Password</label>
-            <input type="password" required className="auth-input" value={password} onChange={e => setPassword(e.target.value)} disabled={submitting} />
-          </div>
-          <div className="auth-form-group">
-            <label>Confirm Password</label>
-            <input type="password" required className="auth-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={submitting} />
-          </div>
-          <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '16px 0 0 0', background: '#ff0844', color: '#fff', borderColor: '#ff0844' }} disabled={submitting}>
-            <span>{submitting ? "Recalibrating..." : "Confirm New Password ➔"}</span>
-          </button>
-        </form>
-      </div>
-    </section>
-  );
-}
-
-function VerifyEmailScreen({ 
-  token, 
-  onFinish, 
-  setNotification 
-}: { 
-  token: string; 
-  onFinish: () => void; 
-  setNotification: (n: any) => void;
-}) {
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  useEffect(() => {
-    api.get(`/auth/verify-email?token=${token}`)
-      .then(data => {
-        if (data.success) {
-          setStatus("success");
-          setNotification({ type: "success", message: "Account verified! Welcome to the Arena." });
-        }
-      })
-      .catch(err => {
-        setStatus("error");
-        setErrorMsg(err.message || "Failed to verify account.");
-      });
-  }, [token]);
-
-  return (
-    <section className="start-sheet">
-      <PaperDoodles />
-      <div className="auth-card" style={{ textAlign: 'center' }}>
-        {status === "loading" && (
-          <>
-            <h2 style={{ color: '#00f2fe' }}>Verifying Account...</h2>
-            <div className="spinner" style={{ margin: '24px auto' }} />
-            <p style={{ color: '#64748b' }}>Securing your credentials in the arena database.</p>
-          </>
-        )}
-        {status === "success" && (
-          <>
-            <h2 style={{ color: '#4ade80' }}>✓ Verified Successfully!</h2>
-            <p style={{ color: '#94a3b8', margin: '16px 0 24px 0' }}>Your account is now fully verified. You can log in and claim your rank.</p>
-            <button className="primary-button choose-button" style={{ width: '100%', background: '#4ade80', borderColor: '#4ade80', color: '#000' }} onClick={onFinish}>
-              Proceed to Login ➔
-            </button>
-          </>
-        )}
-        {status === "error" && (
-          <>
-            <h2 style={{ color: '#ff0844' }}>✗ Verification Failed</h2>
-            <p style={{ color: '#ef4444', margin: '16px 0 24px 0' }}>{errorMsg}</p>
-            <button className="ghost-button" style={{ width: '100%' }} onClick={onFinish}>
-              Back to Login
-            </button>
-          </>
-        )}
+      <button className="ghost-button" onClick={onBack} style={{ position: 'absolute', top: '20px', left: '20px', margin: 0 }}>
+        ➔ Back to Lobby
+      </button>
+      <div style={{ marginTop: '50px' }}>
+        <SignUp appearance={clerkAppearance} signInUrl="/login" fallbackRedirectUrl="/" />
       </div>
     </section>
   );
 }
 
 function ProfileScreen({ 
-  currentUser, 
+  user, 
   onLogout, 
   onBack, 
-  setNotification,
-  setCurrentUser
+  setNotification
 }: { 
-  currentUser: any; 
+  user: any; 
   onLogout: () => void; 
   onBack: () => void; 
   setNotification: (n: any) => void;
-  setCurrentUser: (u: any) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"dashboard" | "review" | "settings">("dashboard");
-  const rank = getRatingRank(currentUser.rating);
+  const rating = user?.unsafeMetadata?.rating || 1;
+  const rank = getRatingRank(rating);
 
   // Review states
   const [stars, setStars] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // Settings states
-  const [username, setUsername] = useState(currentUser.username);
-  const [newPassword, setNewPassword] = useState("");
-  const [submittingSettings, setSubmittingSettings] = useState(false);
-
-  // Load existing review on tab select
-  useEffect(() => {
-    if (activeTab === "review") {
-      api.get("/api/ratings/me")
-        .then(data => {
-          if (data.success && data.rating) {
-            setStars(data.rating.rating);
-            setReviewText(data.rating.review);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to load review data", err);
-        });
-    }
-  }, [activeTab]);
-
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submittingReview) return;
     setSubmittingReview(true);
     try {
-      const data = await api.post("/api/ratings", { rating: stars, review: reviewText });
+      const data = await api.post("/api/ratings", {
+        username: user.username || user.firstName || "Player",
+        profilePicture: user.imageUrl,
+        rating: stars,
+        review: reviewText
+      });
       if (data.success) {
-        setNotification({ type: "success", message: "Review updated successfully!" });
+        setNotification({ type: "success", message: "Review submitted successfully!" });
+        setReviewText("");
       }
     } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Failed to update review." });
+      setNotification({ type: "error", message: err.message || "Failed to submit review." });
     } finally {
       setSubmittingReview(false);
-    }
-  };
-
-  const handleSettingsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submittingSettings) return;
-    setSubmittingSettings(true);
-    try {
-      const payload: any = { username };
-      if (newPassword) {
-        payload.password = newPassword;
-      }
-      const data = await api.post("/auth/settings", payload);
-      if (data.success) {
-        setCurrentUser(data.user);
-        setNewPassword("");
-        setNotification({ type: "success", message: "Settings updated successfully!" });
-      }
-    } catch (err: any) {
-      setNotification({ type: "error", message: err.message || "Failed to update settings." });
-    } finally {
-      setSubmittingSettings(false);
     }
   };
 
@@ -1370,15 +1099,15 @@ function ProfileScreen({
       
       <div className="sheet-header" style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
         <div className="review-avatar" style={{ width: '60px', height: '60px', fontSize: '1.6rem' }}>
-          {currentUser.profilePicture ? (
-            <img src={currentUser.profilePicture} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+          {user.imageUrl ? (
+            <img src={user.imageUrl} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
           ) : (
-            currentUser.username.slice(0, 2).toUpperCase()
+            (user.username || user.firstName || "PL").slice(0, 2).toUpperCase()
           )}
         </div>
         <div className="header-text" style={{ flex: 1 }}>
-          <h1 style={{ color: '#f8fafc', margin: 0, fontSize: '1.8rem' }}>{currentUser.username}</h1>
-          <p className="screen-subtitle" style={{ margin: '4px 0 0 0' }}>{currentUser.email}</p>
+          <h1 style={{ color: '#f8fafc', margin: 0, fontSize: '1.8rem' }}>{user.username || user.firstName || "Player"}</h1>
+          <p className="screen-subtitle" style={{ margin: '4px 0 0 0' }}>{user.primaryEmailAddress?.emailAddress}</p>
         </div>
       </div>
 
@@ -1400,7 +1129,7 @@ function ProfileScreen({
             <div className="rating-preview-card" style={{ borderColor: rank.color, background: 'rgba(255,255,255,0.02)' }}>
               <h3 style={{ margin: '0 0 8px 0', color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 800 }}>Global Ladder Rating</h3>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                <b style={{ color: rank.color, fontSize: '3.5rem', lineHeight: 1 }}>{currentUser.rating}</b>
+                <b style={{ color: rank.color, fontSize: '3.5rem', lineHeight: 1 }}>{rating}</b>
                 <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc' }}>{rank.title}</span>
               </div>
             </div>
@@ -1444,19 +1173,20 @@ function ProfileScreen({
         )}
 
         {activeTab === "settings" && (
-          <form onSubmit={handleSettingsSubmit}>
-            <div className="auth-form-group">
-              <label>Change Username</label>
-              <input type="text" required className="auth-input" value={username} onChange={e => setUsername(e.target.value)} disabled={submittingSettings} />
-            </div>
-            <div className="auth-form-group">
-              <label>Change Password (optional)</label>
-              <input type="password" className="auth-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" disabled={submittingSettings} />
-            </div>
-            <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '16px 0 0 0', background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }} disabled={submittingSettings}>
-              <span>{submittingSettings ? "Saving Settings..." : "Save Settings ➔"}</span>
-            </button>
-          </form>
+          <div className="clerk-profile-settings-container" style={{ display: 'flex', justifyContent: 'center', background: '#161b30', borderRadius: '12px', padding: '10px', border: '1px solid #232e4d' }}>
+            <UserProfile appearance={{
+              ...clerkAppearance,
+              elements: {
+                ...clerkAppearance.elements,
+                card: {
+                  border: "none",
+                  boxShadow: "none",
+                  background: "transparent",
+                  width: "100%"
+                }
+              }
+            }} />
+          </div>
         )}
       </div>
 
@@ -1600,50 +1330,22 @@ export default function App() {
   
   const socketRef = useRef<WebSocket | null>(null);
 
+  const { user, isLoaded: clerkLoaded } = useUser();
+  const { signOut } = useClerk();
+
   // Authentication & Reviews states
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [urlToken, setUrlToken] = useState<string | null>(null);
   const [publicReviews, setPublicReviews] = useState<any[]>([]);
 
-  // 1. Session Restoring & URL verification token parser hook
+  // 1. Sync rating from Clerk metadata when user loads
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const modeParam = params.get("mode");
-    const tokenParam = params.get("token");
-
-    if (tokenParam && (modeParam === "verify" || modeParam === "reset")) {
-      setUrlToken(tokenParam);
-      if (modeParam === "verify") {
-        setPhase("verify-email");
-      } else if (modeParam === "reset") {
-        setPhase("reset-password");
+    if (clerkLoaded && user) {
+      const metadataRating = user.unsafeMetadata?.rating;
+      if (typeof metadataRating === "number") {
+        setRating(metadataRating);
       }
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
-
-    // Attempt auto-login session restore
-    api.get("/auth/me")
-      .then(data => {
-        if (data.success && data.user) {
-          setCurrentUser(data.user);
-          if (data.user.rating) {
-            setRating(data.user.rating);
-          }
-          setPhase("lobby");
-        } else {
-          setPhase(curr => curr === "verify-email" || curr === "reset-password" ? curr : "login");
-        }
-      })
-      .catch(() => {
-        console.log("No active session.");
-        setPhase(curr => curr === "verify-email" || curr === "reset-password" ? curr : "login");
-      })
-      .finally(() => {
-        setAuthLoading(false);
-      });
-  }, []);
+  }, [user, clerkLoaded]);
 
   // 2. Fetch public reviews when returning to Lobby Screen
   useEffect(() => {
@@ -1681,10 +1383,10 @@ export default function App() {
       "playing", 
       "results"
     ];
-    if (!currentUser && !authLoading && protectedPhases.includes(phase)) {
+    if (clerkLoaded && !user && protectedPhases.includes(phase)) {
       setPhase("login");
     }
-  }, [phase, currentUser, authLoading]);
+  }, [phase, user, clerkLoaded]);
 
   useEffect(() => {
     fetchOnlineQuotes();
@@ -1746,14 +1448,13 @@ export default function App() {
       setRating((prev) => {
         const newVal = Math.max(1, Math.min(100, prev + change));
         localStorage.setItem("arena_rating", String(newVal));
-        if (currentUser) {
-          api.post("/api/ratings/skill", { rating: newVal })
-            .then(data => {
-              if (data.success) {
-                setCurrentUser((prevUser: any) => prevUser ? { ...prevUser, rating: data.rating } : null);
-              }
-            })
-            .catch(err => console.error("Failed to sync rating to db:", err));
+        if (user) {
+          user.update({
+            unsafeMetadata: {
+              ...user.unsafeMetadata,
+              rating: newVal
+            }
+          }).catch(err => console.error("Failed to sync rating to Clerk:", err));
         }
         return newVal;
       });
@@ -1941,7 +1642,7 @@ export default function App() {
     setPhase("lobby");
   };
 
-  if (authLoading) {
+  if (!clerkLoaded) {
     return (
       <div className="notebook-app center-screen">
         <PaperDoodles />
@@ -1994,7 +1695,7 @@ export default function App() {
           <LobbyScreen 
             onSelectLocal={() => setPhase("mode")} 
             onSelectMultiplayer={() => setPhase("multiplayer-setup")} 
-            currentUser={currentUser}
+            user={user}
             onProfileClick={() => setPhase("profile")}
             onLoginClick={() => setPhase("login")}
             publicReviews={publicReviews}
@@ -2004,64 +1705,22 @@ export default function App() {
 
       {phase === "login" && (
         <div className="center-screen">
-          <LoginScreen 
-            onLoginSuccess={(u) => { setCurrentUser(u); setPhase("lobby"); }}
-            onToggleSignup={() => setPhase("signup")}
-            onToggleForgot={() => setPhase("forgot-password")}
-            setNotification={setNotification}
-          />
+          <LoginScreen onBack={() => setPhase("lobby")} />
         </div>
       )}
 
       {phase === "signup" && (
         <div className="center-screen">
-          <SignupScreen 
-            onSignupSuccess={() => setPhase("login")}
-            onToggleLogin={() => setPhase("login")}
-            setNotification={setNotification}
-          />
+          <SignupScreen onBack={() => setPhase("lobby")} />
         </div>
       )}
 
-      {phase === "forgot-password" && (
-        <div className="center-screen">
-          <ForgotPasswordScreen 
-            onBackToLogin={() => setPhase("login")}
-            setNotification={setNotification}
-          />
-        </div>
-      )}
-
-      {phase === "reset-password" && (
-        <div className="center-screen">
-          <ResetPasswordScreen 
-            token={urlToken || ""}
-            onResetSuccess={() => { setUrlToken(null); setPhase("login"); }}
-            setNotification={setNotification}
-          />
-        </div>
-      )}
-
-      {phase === "verify-email" && (
-        <div className="center-screen">
-          <VerifyEmailScreen 
-            token={urlToken || ""}
-            onFinish={() => { setUrlToken(null); setPhase("login"); }}
-            setNotification={setNotification}
-          />
-        </div>
-      )}
-
-      {phase === "profile" && currentUser && (
+      {phase === "profile" && user && (
         <div className="center-screen">
           <ProfileScreen 
-            currentUser={currentUser}
-            setCurrentUser={setCurrentUser}
+            user={user}
             onLogout={async () => {
-              try {
-                await api.post("/auth/logout");
-              } catch(e) {}
-              setCurrentUser(null);
+              await signOut();
               setPhase("login");
               setNotification({ type: "success", message: "Logged out successfully." });
             }}
@@ -2074,7 +1733,7 @@ export default function App() {
       {phase === "multiplayer-setup" && (
         <div className="center-screen">
           <MultiplayerSetupScreen 
-            playerName={playerNameState || (currentUser ? currentUser.username : "")}
+            playerName={playerNameState || (user ? (user.username || user.firstName || "") : "")}
             setPlayerName={setPlayerNameState}
             roomCode={roomCode}
             setRoomCode={setRoomCode}
