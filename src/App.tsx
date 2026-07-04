@@ -1337,15 +1337,18 @@ export default function App() {
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [publicReviews, setPublicReviews] = useState<any[]>([]);
 
-  // 1. Sync rating from Clerk metadata when user loads
+  // 1. Sync rating from Clerk metadata when user loads and redirect to lobby
   useEffect(() => {
     if (clerkLoaded && user) {
       const metadataRating = user.unsafeMetadata?.rating;
       if (typeof metadataRating === "number") {
         setRating(metadataRating);
       }
+      if (phase === "login" || phase === "signup") {
+        setPhase("lobby");
+      }
     }
-  }, [user, clerkLoaded]);
+  }, [user, clerkLoaded, phase]);
 
   // 2. Fetch public reviews when returning to Lobby Screen
   useEffect(() => {
