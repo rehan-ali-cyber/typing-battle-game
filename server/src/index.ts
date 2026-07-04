@@ -3,16 +3,21 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
 import { prisma } from "./config/db.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-app.set("trust proxy", 1); // Trust Render proxy headers
+app.set("trust proxy", 1); // Trust proxy headers
 const PORT = process.env.PORT || 5001;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-// CORS configuration
+// CORS configuration (For local development where Vite runs on 5173)
 app.use(
   cors({
     origin: FRONTEND_URL,
@@ -75,9 +80,20 @@ app.post("/api/ratings", async (req, res) => {
   }
 });
 
-// --- Basic health check route ---
-app.get("/", (req, res) => {
-  res.json({ message: "Typing Battle Arena WebSocket Server is running!" });
+// Serve frontend static files from root 'dist' folder
+const rootDistPath = path.join(__dirname, "../../dist");
+app.use(express.static(rootDistPath));
+
+// Catch-all route to serve index.html for frontend SPA routing
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api") || req.path.startsWith("/auth")) {
+    return next();
+  }
+  res.sendFile(path.join(rootDistPath, "index.html"), (err) => {
+    if (err) {
+      res.status(404).send("Frontend assets not built. Please run 'npm run build' first.");
+    }
+  });
 });
 
 // Create HTTP server wrapping Express
@@ -173,6 +189,5 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Typing Battle Arena Server running on port ${PORT}`);
-  console.log(`👉 Frontend URL: ${FRONTEND_URL}`);
+  console.log(`🚀 Typing Battle Arena Monolith Server running on port ${PORT}`);
 });

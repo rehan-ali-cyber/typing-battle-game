@@ -1557,8 +1557,14 @@ export default function App() {
     }
     setMpStatus("Connecting to Arena...");
     
-    const backendUrl = (import.meta as any).env.VITE_API_URL || "http://localhost:5001";
-    const wsUrl = backendUrl.replace(/^http/, "ws") + "/ws-multiplayer";
+    const backendUrl = (import.meta as any).env.VITE_API_URL;
+    let wsUrl = "";
+    if (backendUrl) {
+      wsUrl = backendUrl.replace(/^http/, "ws") + "/ws-multiplayer";
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl = `${protocol}//${window.location.host}/ws-multiplayer`;
+    }
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
