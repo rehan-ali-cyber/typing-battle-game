@@ -3,7 +3,7 @@
 Welcome to **Typing Battle Arena**, a fast-paced multiplayer and single-player game where typing speed and coding accuracy are your weapons! Battle against smart AI bots or challenge your friends in real-time 1v1 duels.
 
 ## 🔗 Live Demo
-**[🎮 Play Typing Battle Arena Live! (https://typing-battle-game-jmjv.onrender.com)](https://typing-battle-game-jmjv.onrender.com)**
+**[🎮 Play Typing Battle Arena Live! (https://typing-battle-game-jmjv.onrender.com/)](https://typing-battle-game-jmjv.onrender.com/)**
 
 ---
 
