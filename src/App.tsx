@@ -1071,6 +1071,28 @@ function ProfileScreen({
   const [reviewText, setReviewText] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // Settings states
+  const [usernameState, setUsernameState] = useState(user.username || "");
+  const [displayNameState, setDisplayNameState] = useState(user.firstName || "");
+  const [submittingSettings, setSubmittingSettings] = useState(false);
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submittingSettings) return;
+    setSubmittingSettings(true);
+    try {
+      await user.update({
+        username: usernameState || undefined,
+        firstName: displayNameState || undefined
+      });
+      setNotification({ type: "success", message: "Profile settings updated successfully!" });
+    } catch (err: any) {
+      setNotification({ type: "error", message: err.message || "Failed to update profile settings." });
+    } finally {
+      setSubmittingSettings(false);
+    }
+  };
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submittingReview) return;
@@ -1173,20 +1195,33 @@ function ProfileScreen({
         )}
 
         {activeTab === "settings" && (
-          <div className="clerk-profile-settings-container" style={{ display: 'flex', justifyContent: 'center', background: '#161b30', borderRadius: '12px', padding: '10px', border: '1px solid #232e4d' }}>
-            <UserProfile appearance={{
-              ...clerkAppearance,
-              elements: {
-                ...clerkAppearance.elements,
-                card: {
-                  border: "none",
-                  boxShadow: "none",
-                  background: "transparent",
-                  width: "100%"
-                }
-              }
-            }} />
-          </div>
+          <form onSubmit={handleSettingsSubmit}>
+            <div className="auth-form-group">
+              <label>Edit Username</label>
+              <input 
+                type="text" 
+                required 
+                className="auth-input" 
+                value={usernameState} 
+                onChange={e => setUsernameState(e.target.value)} 
+                disabled={submittingSettings} 
+              />
+            </div>
+            <div className="auth-form-group">
+              <label>Edit Display Name</label>
+              <input 
+                type="text" 
+                required 
+                className="auth-input" 
+                value={displayNameState} 
+                onChange={e => setDisplayNameState(e.target.value)} 
+                disabled={submittingSettings} 
+              />
+            </div>
+            <button className="primary-button choose-button" type="submit" style={{ width: '100%', margin: '16px 0 0 0', background: '#00f2fe', color: '#000', borderColor: '#00f2fe' }} disabled={submittingSettings}>
+              <span>{submittingSettings ? "Saving Settings..." : "Save Settings ➔"}</span>
+            </button>
+          </form>
         )}
       </div>
 
