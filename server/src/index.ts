@@ -35,6 +35,7 @@ import { csrfProtection, generateCsrfToken } from "./middleware/csrfMiddleware.j
 import { generalLimiter, authLimiter, passwordResetLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
+app.set("trust proxy", 1); // Trust Render proxy headers
 const PORT = process.env.PORT || 5001;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
